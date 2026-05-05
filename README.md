@@ -10,9 +10,7 @@
 
 ![alt text](image.png)
 
-> <img width="2551" height="1500" alt="image" src="https://github.com/user-attachments/assets/4b7f6e7b-f24a-4907-8ae3-41463eb15eb2" />
 
-![alt text](image-1.png)
 ---
 
 ## ⚡ Why?

@@ -27,10 +27,12 @@
   $: searchTotalPages = Math.ceil(searchResults.length / PAGE_SIZE) || 1;
 
   const PAGE_SIZE = 10; // 分页设置：每页显示 10 个条目
+  let rootPage = 0;
+  
 
-  $: currentLayer = navStack.length > 0
-    ? navStack[navStack.length - 1]
-    : { path: null, items: appViewActive ? apps : (showFilesView ? files : folders), page: 0 };//$:响应式变量，当currentLayer改变时，totalPages也会改变。？()：()条件运算符：if-else
+$: currentLayer = navStack.length > 0
+  ? navStack[navStack.length - 1]
+  : { path: null, items: appViewActive ? apps : (showFilesView ? files : folders), page: rootPage };//$:响应式变量，当currentLayer改变时，totalPages也会改变。？()：()条件运算符：if-else
 
   $: totalPages = Math.ceil(currentLayer.items.length / PAGE_SIZE) || 1;
   $: pageItems = currentLayer.items.slice(
@@ -341,20 +343,36 @@ async function handleKey(e) {
             showPickerForFolder(currentPath);
             break;
         }
-        case 'ArrowLeft':
-            if (currentLayer.page > 0) {
-                currentLayer.page--;
-                navStack = navStack;
-                e.preventDefault();
-            }
-            break;
-        case 'ArrowRight':
-            if (currentLayer.page < totalPages - 1) {
-                currentLayer.page++;
-                navStack = navStack;
-                e.preventDefault();
-            }
-            break;
+       case 'ArrowLeft':
+        if (navStack.length > 0) {
+          // 文件夹内部：更新栈顶
+          if (currentLayer.page > 0) {
+            currentLayer.page--;
+            navStack = [...navStack];
+            e.preventDefault();
+          }
+        } else {
+          // 根视图：更新 rootPage
+          if (rootPage > 0) {
+            rootPage--;
+            e.preventDefault();
+          }
+        }
+        break;
+      case 'ArrowRight':
+        if (navStack.length > 0) {
+          if (currentLayer.page < totalPages - 1) {
+            currentLayer.page++;
+            navStack = [...navStack];
+            e.preventDefault();
+          }
+        } else {
+          if (rootPage < totalPages - 1) {
+            rootPage++;
+            e.preventDefault();
+          }
+        }
+        break;
         case 'Backspace':
             goBack();
             e.preventDefault();
