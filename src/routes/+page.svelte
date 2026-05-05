@@ -432,10 +432,14 @@ async function handleKey(e) {
   {/if}
   Shift+A 视图 | Shift+X 应用 | shift+T 置顶 | ←→ 翻页 | Del 删除 |
   a 添加文件 | s 添加文件夹 | d 添加应用 | 
-  Enter 用应用打开文件夹
+  <br>
+  Enter 用应用打开文件夹  Tab 输入框模式 | / 搜索 | 0~9 选择 
+  <br>
+
+  后端隐藏功能:在src-tauri\src\hotkey.rs里面
 
 </span>
-<br/>
+
 <div style="text-align: center;  color: var(--text-bright);          /* 纯白，最高亮 */
     font-weight: 600;                   /* 加粗 */
     text-shadow: 0 0 6px var(--shadow-glow);
