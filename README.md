@@ -7,11 +7,12 @@
 一个**键盘优先（Keyboard-first）**的极客面板，用最少的按键完成应用启动与路径访问，尽可能替代鼠标操作。
 
 > A **keyboard-first control panel** that lets you launch apps and access files with minimal keystrokes — reducing or eliminating mouse usage.
->
+
+![alt text](image.png)
 
 > <img width="2551" height="1500" alt="image" src="https://github.com/user-attachments/assets/4b7f6e7b-f24a-4907-8ae3-41463eb15eb2" />
 
-
+![alt text](image-1.png)
 ---
 
 ## ⚡ Why?
