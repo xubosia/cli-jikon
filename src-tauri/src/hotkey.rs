@@ -91,6 +91,11 @@ pub fn register_hotkeys(app: &tauri::App) {
         r"C:\Program Files\Google\Chrome\Application\chrome.exe",
         vec!["https://github.com/"]
     );
+    reg_program(&app_handle, "Shift+5",
+        r"C:\Program Files\Google\Chrome\Application\chrome.exe",
+        vec!["https://www.youtube.com/"]
+    );
+
     reg_url(&app_handle, "Shift+2", "https://www.bilibili.com/index.php");
     reg_url(&app_handle, "Shift+3", "https://chat.deepseek.com/");
     // 未来添加更多快捷键，直接在这里加一行 reg_url 或 reg_program 即可
