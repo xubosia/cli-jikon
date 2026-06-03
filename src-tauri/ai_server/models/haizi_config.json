@@ -1,0 +1,8 @@
+{
+  "vocab_size": 1800,
+  "embed_size": 32,
+  "hidden_size": 2048,
+  "num_layers": 1,
+  "seq_length": 10,
+  "min_freq": 10
+}

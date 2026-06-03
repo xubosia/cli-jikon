@@ -5,6 +5,7 @@ mod hotkey;
 mod models;
 mod overlay;
 mod clipboard;
+mod python_runner;   // ← 新增
 
 use tauri::Manager; // <--- 这一行是必须的，否则 get_webview_window 找不到
 use tauri_plugin_global_shortcut::GlobalShortcutExt;
@@ -31,6 +32,7 @@ fn main() {
                     return Ok(());
                 }
             };
+            
 
             let _ = window.show();
             let _ = window.set_focus();
@@ -79,6 +81,7 @@ fn main() {
 
             overlay::init(app);
             clipboard::register_clipboard_shortcuts(app);
+            python_runner::setup_python_backend(app);   // 启动 Python 后端
 
             Ok(())
         })
@@ -93,6 +96,7 @@ fn main() {
             commands::toggle_always_on_top,
             commands::get_always_on_top,
             commands::focus_main_window,
+            clipboard::simulate_input_and_hide, 
         ])
         .run(tauri::generate_context!())
         .expect("error");

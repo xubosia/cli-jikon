@@ -94,18 +94,23 @@ onMount(async () => {
       alwaysOnTop = await invoke('get_always_on_top');
     } catch {}
     
-    listen('clipboard-action', async (event) => {
-      const { text, mode } = event.payload;
-      await invoke('show_main_window').catch(() => {});
-      if (mode === 'browser') {
+  let pendingClipboardAction = null;
+  listen('clipboard-action', async (event) => {
+    pendingClipboardAction = event;
+    await new Promise(resolve => setTimeout(resolve, 300));   // 等待 300ms
+    if (pendingClipboardAction !== event) return;             // 不是最新事件，丢弃
+    const { text, mode } = event.payload;
+    await invoke('show_main_window').catch(() => {});
+    if (mode === 'browser') {
         await openUrlOrSearch(text);
         browserInputHistory = [text, ...browserInputHistory.filter(h => h !== text)];
-      } else {
+    } else {
         await invoke('execute_command', { cmd: text });
         commandInputHistory = [text, ...commandInputHistory.filter(h => h !== text)];
-      }
-      persist();
-    });
+    }
+    persist();
+    pendingClipboardAction = null;
+});
   });
   async function persist() {
     try {
@@ -431,6 +436,13 @@ onMount(async () => {
         showPickerForFolder(currentPath);
         break;
       }
+       case 'f':
+          // 仅在文件夹视图下，且有真实文件路径时才有效
+          if (!appViewActive && currentLayer.path) {
+            await invoke('open_path', { path: currentLayer.path });
+          }
+          e.preventDefault();
+          break;
       case 'ArrowLeft':
         if (navStack.length > 0) {
           if (currentLayer.page > 0) {

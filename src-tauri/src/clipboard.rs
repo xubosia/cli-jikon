@@ -6,6 +6,7 @@ use std::sync::Mutex;
 use std::time::{Duration, Instant};
 use std::sync::Arc;
 use std::thread;
+use tauri::Manager;
 
 /// 向前端传递的剪贴板动作
 #[derive(Clone, serde::Serialize)]
@@ -42,7 +43,7 @@ pub fn register_clipboard_shortcuts(app: &tauri::App) {
     // Ctrl+Shift+C → 浏览器搜索（带防抖 + 自动复制）
     let last1 = Arc::new(Mutex::new(Instant::now() - Duration::from_secs(1)));
     let _ = app.global_shortcut().on_shortcut(
-        "Ctrl+Shift+C",
+        "Ctrl+Shift+x",
         {
             let last = last1.clone();
             move |_app, _shortcut, _event| {
@@ -73,7 +74,7 @@ pub fn register_clipboard_shortcuts(app: &tauri::App) {
     let handle2 = app.handle().clone();
     let last2 = Arc::new(Mutex::new(Instant::now() - Duration::from_secs(1)));
     let _ = app.global_shortcut().on_shortcut(
-        "Ctrl+Alt+C",
+        "Ctrl+Alt+x",
         {
             let last = last2.clone();
             move |_app, _shortcut, _event| {
@@ -97,4 +98,42 @@ pub fn register_clipboard_shortcuts(app: &tauri::App) {
             }
         },
     );
+}
+/// 模拟键盘输入文本（通过剪贴板粘贴）并自动按回车
+#[tauri::command]
+pub fn simulate_input_and_hide(text: &str, app: tauri::AppHandle) -> Result<(), String> {
+    use enigo::{Enigo, Keyboard, Key, Direction, Settings};
+    use std::thread::sleep;
+    use std::time::Duration;
+
+    // 1. 隐藏窗口（直接使用 app handle，和全局快捷键一样的方式）
+    if let Some(window) = app.get_webview_window("main") {
+        let _ = window.hide();
+    }
+
+    // 2. 短暂等待窗口完全失去焦点
+    sleep(Duration::from_millis(200));
+
+    // 3. 复制文本到剪贴板
+    let mut clipboard = arboard::Clipboard::new()
+        .map_err(|e| format!("剪贴板打开失败: {}", e))?;
+    clipboard.set_text(text)
+        .map_err(|e| format!("剪贴板设置失败: {}", e))?;
+
+    // 4. 释放干扰键并模拟 Ctrl+V
+    let mut enigo = Enigo::new(&Settings::default())
+        .map_err(|e| format!("Enigo 创建失败: {}", e))?;
+    let _ = enigo.key(Key::Shift, Direction::Release);
+    let _ = enigo.key(Key::Control, Direction::Release);
+    let _ = enigo.key(Key::Alt, Direction::Release);
+    sleep(Duration::from_millis(200));//释放干扰键后短暂等待，确保系统状态稳定
+    let _ = enigo.key(Key::Control, Direction::Press);
+    let _ = enigo.key(Key::V, Direction::Click);
+    let _ = enigo.key(Key::Control, Direction::Release);
+
+    // 5. 模拟回车
+    sleep(Duration::from_millis(50));
+    let _ = enigo.key(Key::Return, Direction::Click);
+
+    Ok(())
 }

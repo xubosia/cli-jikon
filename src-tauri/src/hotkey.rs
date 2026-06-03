@@ -7,28 +7,45 @@ use std::time::{Duration, Instant};
 use std::sync::Mutex;
 use std::sync::atomic::{AtomicBool, Ordering};
 use enigo::{Enigo, Keyboard, Settings};
+
 // 全局快捷键开关状态
 static HOTKEY_ENABLED: AtomicBool = AtomicBool::new(true);
+// 中文标点模式开关（true = 中文标点，false = 英文标点）
+static CHINESE_PUNCTUATION: AtomicBool = AtomicBool::new(false);
 
 /// 根据快捷键字符串模拟输出对应的字符
 fn simulate_char(shortcut: &str) {
-    let key_str = match shortcut {
-        "Shift+1" => "!",
-        "Shift+2" => "@",
-        "Shift+3" => "#",
-        "Shift+4" => "$",
-        "Shift+5" => "%",
-        "Shift+6" => "^",
-        "Shift+7" => "&",
-        "Shift+8" => "*",
-        "Shift+9" => "(",
-        "Shift+0" => ")",
-        // 可在此继续扩展其他快捷键
-        _ => return,
-    };
-    // 使用 enigo 输入文本
- if let Ok(mut enigo) = Enigo::new(&Settings::default()) {
-        let _ = enigo.text(key_str);
+    if let Ok(mut enigo) = Enigo::new(&Settings::default()) {
+        let chinese_mode = CHINESE_PUNCTUATION.load(Ordering::Relaxed);
+        
+        let text = match shortcut {
+            // ========== 英文标点 ==========
+            "Shift+1" if !chinese_mode => "!",
+            "Shift+2" if !chinese_mode => "@",
+            "Shift+3" if !chinese_mode => "#",
+            "Shift+4" if !chinese_mode => "$",
+            "Shift+5" if !chinese_mode => "%",
+            "Shift+6" if !chinese_mode => "^",
+            "Shift+7" if !chinese_mode => "&",
+            "Shift+8" if !chinese_mode => "*",
+            "Shift+9" if !chinese_mode => "(",
+            "Shift+0" if !chinese_mode => ")",
+            
+            // ========== 中文标点 ==========
+            "Shift+1" => "！",
+            "Shift+2" => "＠",   // 全角 @（也可改为 · 或自定义）
+            "Shift+3" => "＃",
+            "Shift+4" => "￥",   // 人民币符号
+            "Shift+5" => "％",
+            "Shift+6" => "……",  // 省略号
+            "Shift+7" => "＆",
+            "Shift+8" => "＊",
+            "Shift+9" => "（",
+            "Shift+0" => "）",
+            
+            _ => return,
+        };
+        let _ = enigo.text(text);
     }
 }
 
@@ -38,7 +55,6 @@ fn reg_url(app_handle: &AppHandle, shortcut: &'static str, url: &'static str) {
     let _ = app_handle.global_shortcut().on_shortcut(shortcut, {
         let app_handle = app_handle.clone();
         move |_app, _shortcut, _event| {
-            // 防抖（最先执行）
             let now = Instant::now();
             let mut last_time = last.lock().unwrap();
             if now.duration_since(*last_time) < Duration::from_millis(300) {
@@ -46,12 +62,10 @@ fn reg_url(app_handle: &AppHandle, shortcut: &'static str, url: &'static str) {
             }
             *last_time = now;
 
-            // 根据开关状态分发
             if !HOTKEY_ENABLED.load(Ordering::Relaxed) {
-                simulate_char(shortcut);   // 模拟原本的字符
+                simulate_char(shortcut);
                 return;
             }
-            // 正常执行
             let _ = app_handle.opener().open_url(url, None::<&str>);
         }
     });
@@ -61,7 +75,6 @@ fn reg_program(app_handle: &AppHandle, shortcut: &'static str, program: &'static
     let last = std::sync::Arc::new(Mutex::new(Instant::now() - Duration::from_secs(1)));
     let _ = app_handle.global_shortcut().on_shortcut(shortcut, {
         move |_app, _shortcut, _event| {
-            // 防抖
             let now = Instant::now();
             let mut last_time = last.lock().unwrap();
             if now.duration_since(*last_time) < Duration::from_millis(300) {
@@ -69,7 +82,6 @@ fn reg_program(app_handle: &AppHandle, shortcut: &'static str, program: &'static
             }
             *last_time = now;
 
-            // 分发
             if !HOTKEY_ENABLED.load(Ordering::Relaxed) {
                 simulate_char(shortcut);
                 return;
@@ -78,7 +90,8 @@ fn reg_program(app_handle: &AppHandle, shortcut: &'static str, program: &'static
         }
     });
 }
-/// 注册所有自定义快捷键，并添加 Shift+M 开关
+
+/// 注册所有自定义快捷键
 pub fn register_hotkeys(app: &tauri::App) {
     let app_handle = app.handle().clone();
 
@@ -98,11 +111,10 @@ pub fn register_hotkeys(app: &tauri::App) {
 
     reg_url(&app_handle, "Shift+2", "https://www.bilibili.com/index.php");
     reg_url(&app_handle, "Shift+3", "https://chat.deepseek.com/");
-    // 未来添加更多快捷键，直接在这里加一行 reg_url 或 reg_program 即可
 
-    // 注册开关快捷键 Shift+M（永远生效，自带防抖）
+    // ==================== Shift+M：开/关快捷键功能 ====================
     let last_shift_m = std::sync::Arc::new(Mutex::new(Instant::now() - Duration::from_secs(1)));
-    let _ = app.global_shortcut().on_shortcut("Shift+m", {
+    let _ = app.global_shortcut().on_shortcut("Shift+M", {
         let last = last_shift_m.clone();
         move |_app, _shortcut, _event| {
             let now = Instant::now();
@@ -120,16 +132,36 @@ pub fn register_hotkeys(app: &tauri::App) {
             }
         }
     });
+
+    // ==================== Shift+N：切换中/英文标点模式 ====================
+    let last_shift_n = std::sync::Arc::new(Mutex::new(Instant::now() - Duration::from_secs(1)));
+    let _ = app.global_shortcut().on_shortcut("Shift+N", {
+        let last = last_shift_n.clone();
+        move |_app, _shortcut, _event| {
+            let now = Instant::now();
+            let mut last_time = last.lock().unwrap();
+            if now.duration_since(*last_time) < Duration::from_millis(300) {
+                return;
+            }
+            *last_time = now;
+            let was_chinese = CHINESE_PUNCTUATION.fetch_xor(true, Ordering::Relaxed);
+            let now_chinese = !was_chinese;
+            if now_chinese {
+                println!("[Hotkey] 标点模式：中文全角");
+            } else {
+                println!("[Hotkey] 标点模式：英文半角");
+            }
+        }
+    });
 }
 
-/// 后台保活线程（不变）
 pub fn start_keep_alive(app_handle: AppHandle) {
     thread::spawn(move || {
-        let interval = Duration::from_secs(60);
+        let interval = Duration::from_secs(30);
         loop {
             thread::sleep(interval);
             if let Some(w) = app_handle.get_webview_window("main") {
-                let _ = w.title();
+               let _ = w.set_focus();
             }
         }
     });

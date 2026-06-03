@@ -5,3 +5,12 @@ html, body {
   background: transparent;
   font-family: system-ui, sans-serif;
 }
+/* 只给主容器加 drag */
+main {
+  -webkit-app-region: drag;
+}
+
+/* 把 main 里面所有元素都重置为不可拖动 */
+main * {
+  -webkit-app-region: no-drag;
+}

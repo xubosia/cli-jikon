@@ -1,5 +1,3 @@
-
-
 {
   "$schema": "https://schema.tauri.app/config/2",
   "productName": "cli-jk",
@@ -17,14 +15,13 @@
         "title": "tauri-app",
         "width": 800,
         "height": 600,
-        "transparent" : true,
-        "decorations":  false,
-
+        "transparent": true,
+        "decorations": false,
         "center": true
       }
     ],
     "security": {
-      "csp": null
+      "csp": "default-src 'self'; connect-src 'self' http://127.0.0.1:5001; style-src 'self' 'unsafe-inline'"
     }
   },
   "bundle": {
@@ -36,6 +33,10 @@
       "icons/128x128@2x.png",
       "icons/icon.icns",
       "icons/icon.ico"
+    ],
+    "resources": [
+      "ai_server/*",
+      "ai_server/models/*"
     ]
   }
 }
